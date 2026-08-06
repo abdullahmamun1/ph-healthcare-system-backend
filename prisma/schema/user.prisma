@@ -6,7 +6,6 @@ model User {
   emailVerified      Boolean    @default(false)
   role               Role       @default(PATIENT)
   status             UserStatus @default(ACTIVE)
-  gender             Gender
   needPasswordChange Boolean    @default(false)
   isDeleted          Boolean    @default(false)
   deletedAt          DateTime?
