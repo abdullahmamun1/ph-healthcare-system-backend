@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import type { TokenPayload } from "google-auth-library";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
 import {
 	AuthProvider,
@@ -6,6 +7,7 @@ import {
 	UserStatus,
 } from "../../../generated/prisma/enums";
 import config from "../../config";
+import { googleClient } from "../../lib/googleAuth";
 import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
 import type {
@@ -14,11 +16,9 @@ import type {
 	IRegisterPatientPayload,
 	IRequestUser,
 } from "./auth.interface";
-import type { TokenPayload } from "google-auth-library";
-import { googleClient } from "../../lib/googleAuth";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
-	const { name, password } = payload;
+	const { name, password, patient: patientData } = payload;
 	const email = payload.email.trim().toLowerCase();
 
 	const isUserExists = await prisma.user.findUnique({
@@ -40,7 +40,11 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 			status: UserStatus.ACTIVE,
 			emailVerified: false,
 			patient: {
-				create: { name, email },
+				create: {
+					name,
+					email,
+					contactNumber: patientData?.contactNumber || "",
+				},
 			},
 		},
 		omit: { password: true },
