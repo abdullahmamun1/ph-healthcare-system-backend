@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import type { TokenPayload } from "google-auth-library";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
 import {
@@ -8,14 +9,20 @@ import {
 } from "../../../generated/prisma/enums";
 import config from "../../config";
 import { googleClient } from "../../lib/googleAuth";
+import path from "path";
 import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
+import ejs from "ejs";
 import type {
+	IForgotPasswordPayload,
 	IGoogleLoginPayload,
 	ILoginUserPayload,
 	IRegisterPatientPayload,
 	IRequestUser,
+	IResetPasswordPayload,
 } from "./auth.interface";
+import { redisClient } from "../../lib/redis";
+import { transporter } from "../../lib/nodemailer";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
 	const { name, password, patient: patientData } = payload;
@@ -329,10 +336,140 @@ const googleLogin = async (payload: IGoogleLoginPayload) => {
 	};
 };
 
+const forgotPassword = async (payload: IForgotPasswordPayload) => {
+	const { email } = payload;
+	const isUserExists = await prisma.user.findUnique({
+		where: {
+			email,
+		},
+	});
+
+	if (!isUserExists) {
+		throw new Error("User Does not Exist");
+	}
+	if (!isUserExists.emailVerified) {
+		throw new Error("User is not Verified");
+	}
+	if (isUserExists.status === "BLOCKED") {
+		throw new Error("User is Blocked");
+	}
+	if (isUserExists.status === "DELETED" && isUserExists.isDeleted) {
+		throw new Error("User is Deleted");
+	}
+	if (isUserExists.googleId && isUserExists.authProvider === "GOOGLE") {
+		throw new Error("User has account with google");
+	}
+
+	const otp = crypto.randomInt(100000, 1000000).toString();
+
+	const key = `forgot-password-otp:${isUserExists.email}`;
+
+	const expiryInSec = 5 * 60;
+
+	await redisClient.set(key, otp, {
+		expiration: {
+			type: "EX",
+			value: expiryInSec,
+		},
+	});
+
+	const templatePath = path.join(
+		process.cwd(),
+		"src/app/templates/forgot-password.ejs",
+	);
+
+	const templateData = {
+		appName: "PH Healthcare System",
+		name: isUserExists.name,
+		expiryMinutes: expiryInSec / 60,
+		otp,
+	};
+	const html = await ejs.renderFile(templatePath, templateData);
+
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: isUserExists.email,
+		subject: "Forgot Password OTP",
+		html,
+	});
+};
+const resetPassword = async (payload: IResetPasswordPayload) => {
+	const { email, otp, newPassword } = payload;
+	const isUserExists = await prisma.user.findUnique({
+		where: {
+			email,
+		},
+	});
+
+	if (!isUserExists) {
+		throw new Error("User Does not Exist");
+	}
+	if (!isUserExists.emailVerified) {
+		throw new Error("User is not Verified");
+	}
+	if (isUserExists.status === "BLOCKED") {
+		throw new Error("User is Blocked");
+	}
+	if (isUserExists.status === "DELETED" && isUserExists.isDeleted) {
+		throw new Error("User is Deleted");
+	}
+	if (isUserExists.googleId && isUserExists.authProvider === "GOOGLE") {
+		throw new Error("User has account with google");
+	}
+
+	const key = `forgot-password-otp:${isUserExists.email}`;
+	const redisOtp = await redisClient.get(key);
+
+	if (!redisOtp) {
+		throw new Error("Invalid OTP");
+	}
+
+	if (redisOtp !== otp) {
+		throw new Error("OTP does not match");
+	}
+
+	const hashedNewPassword = await bcrypt.hash(
+		newPassword,
+		Number(config.bcrypt_salt_rounds),
+	);
+
+	const updatedUser = await prisma.user.update({
+		where: {
+			email: isUserExists.email,
+		},
+		data: {
+			password: hashedNewPassword,
+		},
+	});
+
+	await redisClient.del([key]);
+
+	const templatePath = path.join(
+		process.cwd(),
+		"src/app/templates/reset-password-success.ejs",
+	);
+	const templateData = {
+		appName: "PH Healthcare System",
+		name: isUserExists.name,
+		changedAt: updatedUser.updatedAt,
+		otp,
+	};
+	const html = await ejs.renderFile(templatePath, templateData);
+
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: isUserExists.email,
+		subject: "Password Changed",
+		html,
+	});
+};
+
 export const AuthService = {
 	registerPatient,
 	loginUser,
 	getMe,
 	refreshToken,
 	googleLogin,
+	forgotPassword,
+	resetPassword,
 };
