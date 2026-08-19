@@ -8,7 +8,19 @@ import { AuthService } from "./auth.service";
 const registerPatient = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
 
-	const result = await AuthService.registerPatient(payload);
+	await AuthService.registerPatient(payload);
+
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Email Verification Otp Sent successfully",
+		data: null,
+	});
+});
+const verifyPatientEmail = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+
+	const result = await AuthService.verifyPatientEmail(payload);
 
 	const { accessToken, refreshToken, user, patient } = result;
 
@@ -28,7 +40,7 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,
-		message: "Patient registered successfully",
+		message: "Email Verified. Patient registered successfully",
 		data: {
 			accessToken,
 			refreshToken,
@@ -170,6 +182,7 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 
 export const AuthController = {
 	registerPatient,
+	verifyPatientEmail,
 	loginUser,
 	getMe,
 	refreshToken,

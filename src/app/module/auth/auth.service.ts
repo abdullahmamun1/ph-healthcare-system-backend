@@ -20,6 +20,7 @@ import type {
 	IRegisterPatientPayload,
 	IRequestUser,
 	IResetPasswordPayload,
+	IVerifyEmailPayload,
 } from "./auth.interface";
 import { redisClient } from "../../lib/redis";
 import { transporter } from "../../lib/nodemailer";
@@ -38,24 +39,136 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 
 	const hashedPassword = await bcrypt.hash(password, 8);
 
+	const otpKey = `patient-registration-otp:${email}`;
+	const otpValue = crypto.randomInt(100000, 1000000).toString();
+
+	const expiryInSec = 5 * 60;
+
+	await redisClient.set(otpKey, otpValue, {
+		expiration: {
+			type: "EX",
+			value: expiryInSec,
+		},
+	});
+
+	const patientRegistrationKey = `patient-registration-data:${email}`;
+	const redisUserDataPayload = {
+		name,
+		email,
+		password: hashedPassword,
+		patient: patientData,
+	};
+
+	await redisClient.set(
+		patientRegistrationKey,
+		JSON.stringify(redisUserDataPayload),
+		{
+			expiration: {
+				type: "EX",
+				value: expiryInSec,
+			},
+		},
+	);
+
+	const templatePath = path.join(
+		process.cwd(),
+		"src/app/templates/registration-user-otp.ejs",
+	);
+
+	const templateData = {
+		appName: "PH Healthcare System",
+		name: name,
+		expiryMinutes: expiryInSec / 60,
+		otp: otpValue,
+	};
+	const html = await ejs.renderFile(templatePath, templateData);
+
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: email,
+		subject: "Registration User OTP",
+		html,
+	});
+};
+
+const verifyPatientEmail = async (payload: IVerifyEmailPayload) => {
+	const otp = payload.otp;
+	const email = payload.email.trim().toLowerCase();
+
+	const isUserExists = await prisma.user.findUnique({
+		where: { email },
+	});
+
+	if (isUserExists?.emailVerified) {
+		throw new Error("Email is already verified");
+	}
+	if (isUserExists?.status === "BLOCKED") {
+		throw new Error("User is Blocked");
+	}
+	if (isUserExists?.status === "DELETED" && isUserExists?.isDeleted) {
+		throw new Error("User is Deleted");
+	}
+
+	const otpKey = `patient-registration-otp:${email}`;
+	const redisOtp = await redisClient.get(otpKey);
+
+	if (!redisOtp) {
+		throw new Error("Invalid OTP");
+	}
+
+	if (redisOtp !== otp) {
+		throw new Error("OTP does not match");
+	}
+
+	await redisClient.del(otpKey)
+
+	const patientRegistrationKey = `patient-registration-data:${email}`;
+	const redisPatientData = await redisClient.get(patientRegistrationKey);
+
+	if (!redisPatientData) {
+		throw new Error("Patient Data not Found");
+	}
+	const patientPayload : IRegisterPatientPayload = JSON.parse(redisPatientData);
+
 	const createdUser = await prisma.user.create({
 		data: {
-			name,
-			email,
-			password: hashedPassword,
+			name: patientPayload.name,
+			email: patientPayload.email,
+			password: patientPayload.password,
 			role: Role.PATIENT,
 			status: UserStatus.ACTIVE,
-			emailVerified: false,
+			emailVerified: true,
 			patient: {
 				create: {
-					name,
-					email,
-					contactNumber: patientData?.contactNumber || "",
+					name: patientPayload.name,
+					email: patientPayload.email,
+					contactNumber: patientPayload?.patient?.contactNumber || "",
 				},
 			},
 		},
 		omit: { password: true },
 		include: { patient: true },
+	});
+
+	await redisClient.del(patientRegistrationKey);
+
+	const templatePath = path.join(
+		process.cwd(),
+		"src/app/templates/patient-welcome.ejs",
+	);
+
+	const templateData = {
+		appName: "PH Healthcare System",
+		name: createdUser.name,
+		supportEmail: config.email_sender,
+	};
+	const html = await ejs.renderFile(templatePath, templateData);
+
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: createdUser.email,
+		subject: "Welcome to PH Healthcare System",
+		html,
 	});
 
 	const { patient, ...user } = createdUser;
@@ -84,7 +197,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 		accessToken,
 		refreshToken,
 	};
-};
+}
 
 const loginUser = async (payload: ILoginUserPayload) => {
 	const { password } = payload;
@@ -297,6 +410,25 @@ const googleLogin = async (payload: IGoogleLoginPayload) => {
 					},
 				},
 			});
+
+			const templatePath = path.join(
+				process.cwd(),
+				"src/app/templates/patient-welcome.ejs",
+			);
+
+			const templateData = {
+				appName: "PH Healthcare System",
+				name: user.name,
+				supportEmail: config.email_sender,
+			};
+			const html = await ejs.renderFile(templatePath, templateData);
+
+			await transporter.sendMail({
+				from: config.email_sender,
+				to: user.email,
+				subject: "Welcome to PH Healthcare System",
+				html,
+			});
 		}
 	}
 
@@ -393,6 +525,7 @@ const forgotPassword = async (payload: IForgotPasswordPayload) => {
 		html,
 	});
 };
+
 const resetPassword = async (payload: IResetPasswordPayload) => {
 	const { email, otp, newPassword } = payload;
 	const isUserExists = await prisma.user.findUnique({
@@ -466,6 +599,7 @@ const resetPassword = async (payload: IResetPasswordPayload) => {
 
 export const AuthService = {
 	registerPatient,
+	verifyPatientEmail,
 	loginUser,
 	getMe,
 	refreshToken,
