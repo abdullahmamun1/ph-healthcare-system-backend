@@ -8,11 +8,10 @@ import express, {
 } from "express";
 import httpStatus from "http-status";
 import config from "./app/config";
+import { getBkashIdToken } from "./app/lib/bkash";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
 import { AuthRoutes } from "./app/module/auth/auth.route";
-import crypto from "crypto";
-import { success } from "zod";
 import { UserRoutes } from "./app/module/user/user.route";
 
 const app: Application = express();
@@ -36,12 +35,13 @@ app.use("/api/v1/user", UserRoutes);
 
 app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const otp = crypto.randomInt(100000, 1000000);
+		const grantIdTokenResult = await getBkashIdToken()
+		console.log(grantIdTokenResult);
 
 		res.status(httpStatus.OK).json({
 			success: true,
 			message: "Welcome to PH Healthcare System Backend",
-			otp,
+			data: null
 		});
 	} catch (error) {
 		console.log(error);
