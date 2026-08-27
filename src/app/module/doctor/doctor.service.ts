@@ -1,8 +1,8 @@
-import bcrypt from "bcryptjs";
-import type { UploadApiResponse } from "cloudinary";
-import ejs from "ejs";
 import crypto from "node:crypto";
 import path from "node:path";
+import bcrypt from "bcryptjs";
+import ejs from "ejs";
+import type { UploadApiResponse } from "cloudinary";
 import { Role } from "../../../generated/prisma/enums";
 import config from "../../config";
 import { cloudinary } from "../../lib/cloudinary";

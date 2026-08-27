@@ -11,10 +11,10 @@ import config from "./app/config";
 import { getBkashIdToken } from "./app/lib/bkash";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
-import { AuthRoutes } from "./app/module/auth/auth.route";
-import { UserRoutes } from "./app/module/user/user.route";
 import { AppointmentRoutes } from "./app/module/appointment/appointment.route";
+import { AuthRoutes } from "./app/module/auth/auth.route";
 import { DoctorRoutes } from "./app/module/doctor/doctor.route";
+import { UserRoutes } from "./app/module/user/user.route";
 
 const app: Application = express();
 
@@ -39,13 +39,13 @@ app.use("/api/v1/doctor", DoctorRoutes);
 
 app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const grantIdTokenResult = await getBkashIdToken()
+		const grantIdTokenResult = await getBkashIdToken();
 		console.log(grantIdTokenResult);
 
 		res.status(httpStatus.OK).json({
 			success: true,
 			message: "Welcome to PH Healthcare System Backend",
-			data: null
+			data: null,
 		});
 	} catch (error) {
 		console.log(error);

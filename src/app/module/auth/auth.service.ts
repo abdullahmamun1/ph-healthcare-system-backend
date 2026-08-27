@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import ejs from "ejs";
 import type { TokenPayload } from "google-auth-library";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
+import path from "path";
 import {
 	AuthProvider,
 	Role,
@@ -9,10 +11,10 @@ import {
 } from "../../../generated/prisma/enums";
 import config from "../../config";
 import { googleClient } from "../../lib/googleAuth";
-import path from "path";
+import { transporter } from "../../lib/nodemailer";
 import { prisma } from "../../lib/prisma";
+import { redisClient } from "../../lib/redis";
 import { jwtUtils } from "../../utils/jwt";
-import ejs from "ejs";
 import type {
 	IForgotPasswordPayload,
 	IGoogleLoginPayload,
@@ -22,8 +24,6 @@ import type {
 	IResetPasswordPayload,
 	IVerifyEmailPayload,
 } from "./auth.interface";
-import { redisClient } from "../../lib/redis";
-import { transporter } from "../../lib/nodemailer";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
 	const { name, password, patient: patientData } = payload;
@@ -120,7 +120,7 @@ const verifyPatientEmail = async (payload: IVerifyEmailPayload) => {
 		throw new Error("OTP does not match");
 	}
 
-	await redisClient.del(otpKey)
+	await redisClient.del(otpKey);
 
 	const patientRegistrationKey = `patient-registration-data:${email}`;
 	const redisPatientData = await redisClient.get(patientRegistrationKey);
@@ -128,7 +128,7 @@ const verifyPatientEmail = async (payload: IVerifyEmailPayload) => {
 	if (!redisPatientData) {
 		throw new Error("Patient Data not Found");
 	}
-	const patientPayload : IRegisterPatientPayload = JSON.parse(redisPatientData);
+	const patientPayload: IRegisterPatientPayload = JSON.parse(redisPatientData);
 
 	const createdUser = await prisma.user.create({
 		data: {
@@ -197,7 +197,7 @@ const verifyPatientEmail = async (payload: IVerifyEmailPayload) => {
 		accessToken,
 		refreshToken,
 	};
-}
+};
 
 const loginUser = async (payload: ILoginUserPayload) => {
 	const { password } = payload;
