@@ -23,7 +23,8 @@ model Doctor {
   reviewdAt          DateTime?
 
   resume          String?
-  additionalFiles String[]
+  resumePublicId String?
+  additionalFiles Json? // array of file urls
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
