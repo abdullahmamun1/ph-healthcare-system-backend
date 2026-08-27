@@ -1,9 +1,7 @@
 import { Router } from "express";
-import { validateRequest } from "../../middleware/validateRequest";
-import { AppointmentController } from "./appointment.controller";
-import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
-
+import { auth } from "../../middleware/checkAuth";
+import { AppointmentController } from "./appointment.controller";
 
 const router = Router();
 
@@ -19,8 +17,17 @@ router.post(
 	// validateRequest(UserValidation.PatientRegistrationZodSchema),
 	AppointmentController.payAppointment,
 );
+router.post(
+	"/cancel-appointment",
+	auth(Role.PATIENT, Role.ADMIN, Role.SUPER_ADMIN),
+	// validateRequest(UserValidation.PatientRegistrationZodSchema),
+	AppointmentController.cancelAppointment,
+);
 
 //book appointment callback url
-router.get("/book-appointment/payment/callback", AppointmentController.bookAppointmentCallback)
+router.get(
+	"/book-appointment/payment/callback",
+	AppointmentController.bookAppointmentCallback,
+);
 
 export const AppointmentRoutes = router;
