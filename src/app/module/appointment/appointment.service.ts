@@ -1,8 +1,84 @@
+import {
+	AppointmentStatus,
+	PaymentStatus,
+} from "../../../generated/prisma/enums";
 import config from "../../config";
 import { getBkashIdToken } from "../../lib/bkash";
+import { prisma } from "../../lib/prisma";
+import type { RequestUser } from "../../middleware/checkAuth";
 
-const bookAppointment = async () => {
+const bookAppointment = async (payload: any, user: RequestUser) => {
 	// business logic
+
+	const bkashTransactionResult = await prisma.$transaction(async (tx) => {
+		const appointment = await tx.appointment.create({
+			data: {
+				status: AppointmentStatus.PENDING,
+			},
+		});
+
+		const bkashIdToken = await getBkashIdToken();
+		if (!bkashIdToken) {
+			throw new Error("No Bkash Access Token Found");
+		}
+
+		const bkashCreatePaymentResponse = await fetch(
+			`${config.bkash_base_url}/tokenized/checkout/create`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					Authorization: bkashIdToken,
+					"X-App-Key": config.bkash_app_key,
+				},
+				body: JSON.stringify({
+					mode: "0011",
+					payerReference: user.email, //user email or phone
+					callbackURL: `${config.bkash_callback_url}/appointment/book-appointment/payment/callback`,
+					amount: "1200",
+					currency: "BDT",
+					intent: "sale",
+					merchantInvoiceNumber: appointment.id, //appointmentid
+				}),
+			},
+		);
+
+		const bkashCreatePaymentResult = await bkashCreatePaymentResponse.json();
+
+		await tx.payment.create({
+			data: {
+				merchantInvoiceNumber: bkashCreatePaymentResult.merchantInvoiceNumber,
+				appointmentId: appointment.id,
+				amount: "1200",
+				gatewayResponse: bkashCreatePaymentResult,
+				bkashPaymentId: bkashCreatePaymentResult.paymentID,
+				payerReference: user.email,
+			},
+		});
+
+		return { paymentUrl: bkashCreatePaymentResult.bkashURL };
+	});
+
+	return bkashTransactionResult;
+};
+
+const payAppointment = async (payload: any, user: RequestUser) => {
+	const appointmentId = payload.appointmentId;
+
+	const existingAppointment = await prisma.appointment.findUnique({
+		where: {
+			id: appointmentId,
+		},
+	});
+
+	if (!existingAppointment) {
+		throw new Error("Appointment does not exist!");
+	}
+	if (existingAppointment.status !== "PENDING") {
+		const appointmentStatus = existingAppointment.status;
+		throw new Error(`Appointment is already ${appointmentStatus.toLowerCase}`);
+	}
 
 	const bkashIdToken = await getBkashIdToken();
 	if (!bkashIdToken) {
@@ -21,81 +97,132 @@ const bookAppointment = async () => {
 			},
 			body: JSON.stringify({
 				mode: "0011",
-				payerReference: "01723888888", //user email or phone
+				payerReference: user.email, //user email or phone
 				callbackURL: `${config.bkash_callback_url}/appointment/book-appointment/payment/callback`,
 				amount: "1200",
 				currency: "BDT",
 				intent: "sale",
-				merchantInvoiceNumber: "Inv001", //appointmentid
+				merchantInvoiceNumber: existingAppointment.id, //appointmentid
 			}),
 		},
 	);
 
 	const bkashCreatePaymentResult = await bkashCreatePaymentResponse.json();
 
-	return bkashCreatePaymentResult;
+	await prisma.payment.update({
+		where: {
+			appointmentId: existingAppointment.id,
+		},
+		data: {
+			merchantInvoiceNumber: bkashCreatePaymentResult.merchantInvoiceNumber,
+			gatewayResponse: bkashCreatePaymentResult,
+			bkashPaymentId: bkashCreatePaymentResult.paymentID,
+		},
+	});
+
+	return { paymentUrl: bkashCreatePaymentResult.bkashURL };
 };
 
 const bookAppointmentCallback = async (query: Record<string, any>) => {
-	const paymentId = query.paymentID;
-	const status = query.status;
+	const transactionResult = await prisma.$transaction(async (tx) => {
+		const paymentId = query.paymentID;
+		const status = query.status;
 
-	if (!paymentId) {
-		throw new Error("Payment ID is missing");
-	}
-	if (!status) {
-		throw new Error("Payment status is missing");
-	}
+		if (!paymentId) {
+			throw new Error("Payment ID is missing");
+		}
+		if (!status) {
+			throw new Error("Payment status is missing");
+		}
 
-	const bkashIdToken = await getBkashIdToken();
-	if (!bkashIdToken) {
-		throw new Error("No Bkash Access Token Found");
-	}
+		const bkashIdToken = await getBkashIdToken();
+		if (!bkashIdToken) {
+			throw new Error("No Bkash Access Token Found");
+		}
 
-	const executedPaymentResponse = await fetch(
-		`${config.bkash_base_url}/tokenized/checkout/execute`,
-		{
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-				Authorization: bkashIdToken,
-				"X-App-Key": config.bkash_app_key,
+		const executedPaymentResponse = await fetch(
+			`${config.bkash_base_url}/tokenized/checkout/execute`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					Authorization: bkashIdToken,
+					"X-App-Key": config.bkash_app_key,
+				},
+				body: JSON.stringify({
+					paymentID: paymentId,
+				}),
 			},
-			body: JSON.stringify({
-				paymentID: paymentId,
-			}),
-		},
-	);
+		);
 
-	const executedPaymentResult = await executedPaymentResponse.json();
+		const executedPaymentResult = await executedPaymentResponse.json();
 
-	if(status === "success"){
-		return {
-			executedPaymentResult,
-			redirectUrl : `${config.frontend_url}/dashboard/my-appointments?status=success`
-		};
-	}
-	if(status === "failure"){
-		return {
-			executedPaymentResult,
-			redirectUrl : `${config.frontend_url}/dashboard/my-appointments?status=failure`
-		};
-	}
-	if(status === "cancel"){
-		return {
-			executedPaymentResult,
-			redirectUrl : `${config.frontend_url}/dashboard/my-appointments?status=cancel`
-		};
-	}
+		if (status === "success") {
+			await tx.appointment.update({
+				where: {
+					id: executedPaymentResult.merchantInvoiceNumber,
+				},
+				data: {
+					status: AppointmentStatus.CONFIRMED,
+				},
+			});
 
-	return {
-		executedPaymentResult,
-		redirectUrl: `${config.frontend_url}/dashboard/my-appointments`,
-	};
+			await tx.payment.update({
+				where: {
+					bkashPaymentId: paymentId,
+				},
+				data: {
+					status: PaymentStatus.PAID,
+					bkashTrxId: executedPaymentResult.trxID,
+					paidAt: executedPaymentResult.paymentExecuteTime,
+					gatewayResponse: executedPaymentResult,
+				},
+			});
+
+			return {
+				redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=success`,
+			};
+		} else if (status === "failure") {
+			await tx.payment.update({
+				where: {
+					bkashPaymentId: paymentId,
+				},
+				data: {
+					status: PaymentStatus.FAILED,
+					gatewayResponse: executedPaymentResult,
+				},
+			});
+
+			return {
+				redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=failure`,
+			};
+		} else if (status === "cancel") {
+			await tx.payment.update({
+				where: {
+					bkashPaymentId: paymentId,
+				},
+				data: {
+					status: PaymentStatus.CANCELLED,
+					gatewayResponse: executedPaymentResult,
+				},
+			});
+
+			return {
+				redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=cancel`,
+			};
+		} else {
+			return {
+				redirectUrl: `${config.frontend_url}/dashboard/my-appointments?error=payment-failed`,
+			};
+		}
+	});
+
+	return transactionResult;
 };
 
 export const AppointmentService = {
 	bookAppointment,
+	payAppointment,
 	bookAppointmentCallback,
 };
