@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import httpStatus from "http-status";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
+import { AppError } from "../../utils/AppError";
 import type { IRequestUser } from "./auth.interface";
 import { AuthService } from "./auth.service";
 
@@ -83,7 +84,10 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 	const user = req.user as unknown as IRequestUser;
 
 	if (!user) {
-		throw new Error("User information is missing in the request");
+		throw new AppError(
+			httpStatus.UNAUTHORIZED,
+			"User information is missing in the request",
+		);
 	}
 
 	const result = await AuthService.getMe(user);
@@ -97,7 +101,7 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
 	if (!req.cookies.refreshToken) {
-		throw new Error("Refresh token is missing");
+		throw new AppError(httpStatus.UNAUTHORIZED, "Refresh token is missing");
 	}
 	const result = await AuthService.refreshToken(req.cookies.refreshToken);
 	const { accessToken, refreshToken: newRefreshToken } = result;
@@ -159,12 +163,11 @@ const forgotPassword = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
 	await AuthService.forgotPassword(payload);
 
-
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
 		message: `Otp sent To Email: ${payload.email}`,
-		data: null 
+		data: null,
 	});
 });
 
@@ -176,7 +179,7 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 		statusCode: httpStatus.OK,
 		success: true,
 		message: "Password Changed Successfully",
-		data: null
+		data: null,
 	});
 });
 
@@ -188,5 +191,5 @@ export const AuthController = {
 	refreshToken,
 	googleLogin,
 	forgotPassword,
-	resetPassword
+	resetPassword,
 };

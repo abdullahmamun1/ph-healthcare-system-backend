@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
+import httpStatus from "http-status";
 import { Role } from "../../generated/prisma/enums";
 import config from "../config";
 import { prisma } from "../lib/prisma";
+import { AppError } from "./AppError";
 
 export const seedSuperAdmin = async () => {
 	try {
@@ -19,7 +21,10 @@ export const seedSuperAdmin = async () => {
 		const password = config.super_admin_password;
 
 		if (!name || !password || !email) {
-			throw new Error("Super Admin Credentials Missing in env file");
+			throw new AppError(
+				httpStatus.INTERNAL_SERVER_ERROR,
+				"Super Admin Credentials Missing in env file",
+			);
 		}
 
 		const hashedPassword = await bcrypt.hash(
@@ -66,7 +71,10 @@ export const seedTesterAdmin = async () => {
 		const password = config.tester_admin_password;
 
 		if (!name || !password || !email) {
-			throw new Error("Tester Admin Credentials Missing in env file");
+			throw new AppError(
+				httpStatus.INTERNAL_SERVER_ERROR,
+				"Tester Admin Credentials Missing in env file",
+			);
 		}
 
 		const hashedPassword = await bcrypt.hash(
@@ -113,7 +121,10 @@ export const seedTesterDoctor = async () => {
 		const password = config.tester_doctor_password;
 
 		if (!name || !password || !email) {
-			throw new Error("Tester Doctor Credentials Missing in env file");
+			throw new AppError(
+				httpStatus.INTERNAL_SERVER_ERROR,
+				"Tester Doctor Credentials Missing in env file",
+			);
 		}
 
 		const hashedPassword = await bcrypt.hash(
