@@ -1,7 +1,7 @@
 import type {
 	DoctorVerificationStatus,
 	Role,
-} from "../../../generated/prisma/enums";
+} from "../../generated/prisma/enums";
 
 export interface UserPayload {
 	name: string;
@@ -35,4 +35,14 @@ export interface IApproveDoctorPayload {
 	doctorId: string;
 	verificationStatus: DoctorVerificationStatus;
 	rejectionReason: string;
+}
+
+export interface IQueryParams {
+	searchTerm?: string;
+	page?: string;
+	limit?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
+
+	[key: string]: any;
 }

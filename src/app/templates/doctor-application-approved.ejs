@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Application Approved</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f7; font-family: Arial, Helvetica, sans-serif;">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:30px 0;">
+    <tr>
+      <td align="center">
+
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#16a34a; padding:32px; text-align:center;">
+              <h1 style="margin:0; color:#ffffff; font-size:22px;">
+                <%= appName %>
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+
+              <!-- Icon -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="width:56px; height:56px; background-color:#dcfce7; border-radius:50%;">
+                      <tr>
+                        <td align="center" valign="middle" style="font-size:28px; color:#16a34a; line-height:56px;">
+                          &#10003;
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <h2 style="margin-top:0; text-align:center; color:#111827; font-size:18px;">
+                Congratulations, Dr. <%= name %>!
+              </h2>
+
+              <p style="color:#374151; font-size:15px; line-height:1.6;">
+                We're pleased to inform you that your application to join
+                <%= appName %> as a verified doctor has been
+                <strong style="color:#16a34a;">approved</strong>.
+              </p>
+
+              <!-- Details box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb; border-radius:6px; margin:20px 0;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#6b7280; font-size:13px; padding:4px 0;">Specialty</td>
+                        <td style="color:#111827; font-size:13px; padding:4px 0; text-align:right; font-weight:bold;"><%= specialty %></td>
+                      </tr>
+                      <tr>
+                        <td style="color:#6b7280; font-size:13px; padding:4px 0;">Approved on</td>
+                        <td style="color:#111827; font-size:13px; padding:4px 0; text-align:right; font-weight:bold;"><%= approvedAt %></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color:#374151; font-size:15px; line-height:1.6;">
+                Your profile is now live, and patients can start booking appointments
+                with you. Here's what you can do next:
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+                <tr>
+                  <td style="padding:8px 0; color:#374151; font-size:15px; line-height:1.5;">
+                    &#10003;&nbsp; Set up your availability and schedule
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0; color:#374151; font-size:15px; line-height:1.5;">
+                    &#10003;&nbsp; Complete your professional profile
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0; color:#374151; font-size:15px; line-height:1.5;">
+                    &#10003;&nbsp; Start accepting patient appointments
+                  </td>
+                </tr>
+              </table>
+              <p style="color:#374151; font-size:15px; line-height:1.6;">
+                If you have any questions, reach out to us at
+                <a href="mailto:<%= supportEmail %>" style="color:#16a34a;"><%= supportEmail %></a>.
+              </p>
+
+              <p style="color:#374151; font-size:15px; line-height:1.6; margin-bottom:0;">
+                Welcome aboard,<br />
+                The <%= appName %> Team
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f9fafb; padding:20px 32px; text-align:center;">
+              <p style="margin:0; color:#9ca3af; font-size:12px;">
+                &copy; <%= new Date().getFullYear() %> <%= appName %>. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

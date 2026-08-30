@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-export const applyDoctorValidationZodSchema = z.object({
+export const DoctorVerificationStatusSchema = z.enum([
+	"PENDING",
+	"APPROVED",
+	"REJECTED",
+]);
+
+const applyDoctorValidationZodSchema = z.object({
 	// User Payload fields
 	user: z.object({
 		name: z.string().trim().min(2, "Name must be at least 2 characters"),
@@ -34,5 +40,21 @@ export const applyDoctorValidationZodSchema = z.object({
 	}),
 });
 
+const DoctorEmailVerificationZodSchema = z.object({
+	email: z.email("Email must be a proper email"),
+	otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+export const ApproveDoctorPayloadSchema = z.object({
+	doctorId: z.uuid(),
+	verificationStatus: DoctorVerificationStatusSchema,
+	rejectionReason: z.string().trim().default(""),
+});
+
+export const doctorValidation = {
+	applyDoctorValidationZodSchema,
+	DoctorEmailVerificationZodSchema,
+	ApproveDoctorPayloadSchema,
+};
 // TypeScript type inference from the schema
 export type ApplyDoctorInput = z.infer<typeof applyDoctorValidationZodSchema>;

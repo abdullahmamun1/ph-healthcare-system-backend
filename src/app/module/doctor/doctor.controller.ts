@@ -3,7 +3,7 @@ import httpStatus from "http-status";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { DoctorServices } from "./doctor.service";
-import { applyDoctorValidationZodSchema } from "./doctor.validation";
+import { doctorValidation } from "./doctor.validation";
 
 const applyAsDoctor = catchAsync(async (req: Request, res: Response) => {
 	const files = req.files as { [fieldName: string]: Express.Multer.File[] };
@@ -11,14 +11,15 @@ const applyAsDoctor = catchAsync(async (req: Request, res: Response) => {
 	const resume = files?.["resume"] ? files["resume"][0] : null;
 	const additionalFiles = files?.["additionalFiles"] || [];
 
-	const zodValidationResult = applyDoctorValidationZodSchema.safeParse(
-		JSON.parse(req.body.data),
-	);
+	const zodValidationResult =
+		doctorValidation.applyDoctorValidationZodSchema.safeParse(
+			JSON.parse(req.body.data),
+		);
 	if (!zodValidationResult.success) {
 		throw new Error(zodValidationResult.error?.issues[0].message);
 	}
 
-	const payload = zodValidationResult.data
+	const payload = zodValidationResult.data;
 
 	const result = await DoctorServices.applyAsDoctor(
 		payload,
@@ -34,10 +35,9 @@ const applyAsDoctor = catchAsync(async (req: Request, res: Response) => {
 });
 
 const verifyDoctorEmail = catchAsync(async (req: Request, res: Response) => {
-	
 	const payload = req.body;
 
-	const result = await DoctorServices.verifyDoctorEmail(payload)
+	const result = await DoctorServices.verifyDoctorEmail(payload);
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,
@@ -46,7 +46,33 @@ const verifyDoctorEmail = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const approveDoctor = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+	const user = req.user!;
+
+	const result = await DoctorServices.approveDoctor(payload, user);
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Doctor Email Verified successfully",
+		data: result,
+	});
+});
+
+const getAllDoctors = catchAsync(async (req: Request, res: Response) => {
+	const { data, meta } = await DoctorServices.getAllDoctors(req.query);
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Doctors Retrieved successfully",
+		data: data,
+		meta: meta,
+	});
+});
+
 export const DoctorController = {
 	applyAsDoctor,
-	verifyDoctorEmail
+	verifyDoctorEmail,
+	approveDoctor,
+	getAllDoctors,
 };
