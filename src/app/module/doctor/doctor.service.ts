@@ -7,19 +7,19 @@ import {
 	DoctorVerificationStatus,
 	Role,
 } from "../../../generated/prisma/enums";
+import type { DoctorWhereInput } from "../../../generated/prisma/models";
 import config from "../../config";
-import { IQueryParams } from "../../interfaces";
+import type { IQueryParams } from "../../interfaces";
 import { cloudinary } from "../../lib/cloudinary";
 import { transporter } from "../../lib/nodemailer";
 import { prisma } from "../../lib/prisma";
 import { redisClient } from "../../lib/redis";
-import { RequestUser } from "../../middleware/checkAuth";
+import type { RequestUser } from "../../middleware/checkAuth";
 import type {
 	IApplyAsDoctorPayload,
 	IApproveDoctorPayload,
 	IVerifyDoctorEmailPayload,
 } from "./doctor.interface";
-import { DoctorWhereInput } from "../../../generated/prisma/models";
 
 const applyAsDoctor = async (
 	payload: IApplyAsDoctorPayload,
