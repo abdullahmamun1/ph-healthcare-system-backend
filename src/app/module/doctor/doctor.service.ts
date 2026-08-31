@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import type { UploadApiResponse } from "cloudinary";
 import ejs from "ejs";
+import httpStatus from "http-status";
 import crypto from "node:crypto";
 import path from "node:path";
-import httpStatus from "http-status";
 import {
 	DoctorVerificationStatus,
 	Role,
@@ -16,12 +16,12 @@ import { transporter } from "../../lib/nodemailer";
 import { prisma } from "../../lib/prisma";
 import { redisClient } from "../../lib/redis";
 import type { RequestUser } from "../../middleware/checkAuth";
+import { AppError } from "../../utils/AppError";
 import type {
 	IApplyAsDoctorPayload,
 	IApproveDoctorPayload,
 	IVerifyDoctorEmailPayload,
 } from "./doctor.interface";
-import { AppError } from "../../utils/AppError";
 
 const applyAsDoctor = async (
 	payload: IApplyAsDoctorPayload,
