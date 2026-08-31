@@ -33,6 +33,9 @@ model Doctor {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  appointments Appointment[]
+  schedule Schedule[]
+
   @@index([email], name: "idx_doctor_email")
   @@index([isDeleted], name: "idx_doctor_isDeleted")
   @@map("doctors")
