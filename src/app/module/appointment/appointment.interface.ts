@@ -1,5 +1,3 @@
-import type { PaymentStatus } from "../../../generated/prisma/enums";
-
 export interface IBookAppointmentPayload {
 	scheduleId: string;
 }

@@ -7,7 +7,9 @@ import {
 	Role,
 	ScheduleStatus,
 } from "../../../generated/prisma/enums";
+import type { AppointmentWhereInput } from "../../../generated/prisma/models";
 import config from "../../config";
+import type { IQueryParams } from "../../interfaces";
 import { getBkashIdToken } from "../../lib/bkash";
 import { transporter } from "../../lib/nodemailer";
 import { prisma } from "../../lib/prisma";
@@ -19,8 +21,6 @@ import type {
 	IPayAppointmentPayload,
 	IUpdateAppointmentStatusPayload,
 } from "./appointment.interface";
-import { IQueryParams } from "../../interfaces";
-import { AppointmentWhereInput } from "../../../generated/prisma/models";
 
 const bookAppointment = async (
 	payload: IBookAppointmentPayload,
