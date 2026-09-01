@@ -40,6 +40,31 @@ const applyDoctorValidationZodSchema = z.object({
 	}),
 });
 
+const UpdateDoctorProfileValidationZodSchema = z.object({
+	address: z
+		.string()
+		.trim()
+		.min(5, "Address must be at least 5 characters long")
+		.optional(),
+
+	bio: z
+		.string()
+		.trim()
+		.max(1000, "Bio cannot exceed 1000 characters")
+		.optional(),
+
+	consultationFee: z
+		.number()
+		.min(0, "Consultation fee cannot be negative")
+		.optional(),
+
+	contactNumber: z
+		.string()
+		.trim()
+		.min(5, "Contact number is invalid")
+		.optional(),
+});
+
 const DoctorEmailVerificationZodSchema = z.object({
 	email: z.email("Email must be a proper email"),
 	otp: z.string().length(6, "OTP must be 6 digits"),
@@ -55,6 +80,7 @@ export const doctorValidation = {
 	applyDoctorValidationZodSchema,
 	DoctorEmailVerificationZodSchema,
 	ApproveDoctorPayloadSchema,
+	UpdateDoctorProfileValidationZodSchema,
 };
 // TypeScript type inference from the schema
 export type ApplyDoctorInput = z.infer<typeof applyDoctorValidationZodSchema>;

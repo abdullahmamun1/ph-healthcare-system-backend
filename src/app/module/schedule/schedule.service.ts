@@ -63,13 +63,20 @@ const createSchedule = async (
 	}
 
 	const durationInMinutes = differenceInMinutes(
-		payload.startDateTime,
 		payload.endDateTime,
+		payload.startDateTime,
 	);
 
 	const MINUTES_ALLOCATED_PER_SLOT = 20;
 
 	const totalSlots = Math.floor(durationInMinutes / MINUTES_ALLOCATED_PER_SLOT);
+
+	if (totalSlots < 1) {
+		throw new AppError(
+			httpStatus.CONFLICT,
+			`Schedule Must Be At Least ${MINUTES_ALLOCATED_PER_SLOT} Minutes Long To Fit One Slot`,
+		);
+	}
 
 	const schedule = await prisma.schedule.create({
 		data: {
@@ -418,8 +425,8 @@ const updateSchedule = async (
 	}
 
 	const durationInMinutes = differenceInMinutes(
-		payload.startDateTime,
 		payload.endDateTime,
+		payload.startDateTime,
 	);
 
 	const MINUTES_ALLOCATED_PER_SLOT = 20;
@@ -468,7 +475,7 @@ const publishSchedule = async (scheduleId: string, user: RequestUser) => {
 		throw new AppError(httpStatus.NOT_FOUND, "Schedule Not Found!");
 	}
 
-	if (schedule.doctorId || doctor.id) {
+	if (schedule.doctorId !== doctor.id) {
 		throw new AppError(
 			httpStatus.FORBIDDEN,
 			"You are not allowed to update this schedule",

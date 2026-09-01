@@ -27,11 +27,8 @@ router.get(
 	auth(Role.ADMIN, Role.SUPER_ADMIN),
 	scheduleController.getAllSchedules,
 );
-router.get(
-	"/todays-schedules",
-	auth(Role.PATIENT),
-	scheduleController.getTodaysSchedules,
-);
+router.get("/todays-schedules", scheduleController.getTodaysSchedules);
+
 router.get(
 	"/:scheduleId",
 	auth(Role.DOCTOR, Role.ADMIN, Role.SUPER_ADMIN),
