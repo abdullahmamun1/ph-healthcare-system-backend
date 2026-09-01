@@ -56,4 +56,4 @@ router.delete(
 	scheduleController.deleteSchedule,
 );
 
-export const DoctorRoutes = router;
+export const ScheduleRoutes = router;

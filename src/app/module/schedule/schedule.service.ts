@@ -198,7 +198,7 @@ const getTodaysSchedules = async (query: IQueryParams) => {
 	if (query.specialization) {
 		andConditions.push({
 			doctor: {
-				specialiaztion: {
+				specialization: {
 					equals: query.specialization,
 					mode: "insensitive",
 				},
@@ -245,7 +245,7 @@ const getScheduleById = async (scheduleId: string) => {
 					id: true,
 					name: true,
 					email: true,
-					specialiaztion: true,
+					specialization: true,
 					userId: true,
 				},
 			},
@@ -296,7 +296,7 @@ const getAllSchedules = async (query: IQueryParams) => {
 					{ name: { contains: query.searchTerm, mode: "insensitive" } },
 					{ email: { contains: query.searchTerm, mode: "insensitive" } },
 					{
-						specialiaztion: { contains: query.searchTerm, mode: "insensitive" },
+						specialization: { contains: query.searchTerm, mode: "insensitive" },
 					},
 					{
 						licenseNumber: { contains: query.searchTerm, mode: "insensitive" },

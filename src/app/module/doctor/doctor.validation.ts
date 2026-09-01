@@ -15,7 +15,7 @@ const applyDoctorValidationZodSchema = z.object({
 
 	// Doctor Payload fields
 	doctor: z.object({
-		specialiaztion: z.string().trim().min(2, "Specialization is required"), // Matches schema spelling
+		specialization: z.string().trim().min(2, "Specialization is required"), // Matches schema spelling
 		licenseNumber: z.string().trim().min(3, "Valid license number is required"),
 		qualification: z.string().trim().min(2, "Qualification is required"),
 		experienceYears: z

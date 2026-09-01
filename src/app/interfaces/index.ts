@@ -12,7 +12,7 @@ export interface UserPayload {
 
 export interface DoctorPayload {
 	address?: string;
-	specialiaztion: string;
+	specialization: string;
 	licenseNumber: string;
 	qualification: string;
 	experienceYears: number;

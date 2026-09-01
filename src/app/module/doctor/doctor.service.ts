@@ -272,7 +272,7 @@ const approveDoctor = async (
 	const templateData = {
 		appName: "PH Healthcare System",
 		name: updatedDoctor.name,
-		specialty: updatedDoctor.specialiaztion,
+		specialty: updatedDoctor.specialization,
 		approvedAt: updatedDoctor.reviewdAt,
 		supportEmail: config.email_sender,
 		...(!isApproved && { reason: rejectionReason }),
@@ -306,7 +306,7 @@ const getAllDoctors = async (query: IQueryParams) => {
 			OR: [
 				{ name: { contains: query.searchTerm, mode: "insensitive" } },
 				{ email: { contains: query.searchTerm, mode: "insensitive" } },
-				{ specialiaztion: { contains: query.searchTerm, mode: "insensitive" } },
+				{ specialization: { contains: query.searchTerm, mode: "insensitive" } },
 				{ licenseNumber: { contains: query.searchTerm, mode: "insensitive" } },
 			],
 		});
@@ -315,22 +315,22 @@ const getAllDoctors = async (query: IQueryParams) => {
 	//filtering
 	if (query.specialization) {
 		andConditions.push({
-			specialiaztion: { equals: query.specialization, mode: "insensitive" },
+			specialization: { equals: query.specialization, mode: "insensitive" },
 		});
 	}
 	if (query.email) {
 		andConditions.push({
-			specialiaztion: { equals: query.email, mode: "insensitive" },
+			specialization: { equals: query.email, mode: "insensitive" },
 		});
 	}
 	if (query.licenseNumber) {
 		andConditions.push({
-			specialiaztion: { equals: query.licenseNumber, mode: "insensitive" },
+			specialization: { equals: query.licenseNumber, mode: "insensitive" },
 		});
 	}
 	if (query.verificationStatus) {
 		andConditions.push({
-			specialiaztion: query.verificationStatus as DoctorVerificationStatus,
+			specialization: query.verificationStatus as DoctorVerificationStatus,
 		});
 	}
 
